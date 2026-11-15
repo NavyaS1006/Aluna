@@ -121,6 +121,7 @@ export class MissionEngine {
   }
 
   // ---------------------------------------------------------------- queries
+  renderT() { return this.s.t + (this.s.ended || this.s.paused ? 0 : this.s.acc); }
   pos(el, t = this.s.t) { return propagate(el, t); }
   deployedSats() { return this.s.sats.filter((x) => x.deployed); }
   aliveSats() { return this.s.sats.filter((x) => x.deployed && x.alive); }
@@ -643,7 +644,7 @@ export class MissionEngine {
         case 'network': o.progress = s.stats.networkTime / o.hold; if (s.stats.networkTime >= o.hold) o.done = true; break;
         case 'payload_time': o.progress = s.stats.payloadTime / o.secs; if (s.stats.payloadTime >= o.secs) o.done = true; break;
         case 'inspect': o.progress = s.stats.inspected.length / o.count; if (s.stats.inspected.length >= o.count) o.done = true; break;
-        case 'authorize': if (s.stats.authorized) o.done = true; break;
+      case 'authorize': if (s.stats.authorized) o.done = true; break;
         case 'ai_time': o.progress = s.stats.aiTime / o.secs; if (s.stats.aiTime >= o.secs) o.done = true; break;
         case 'storm_safe': if (s.storm && s.t > s.storm.end) { o.done = alive.length > 0 && alive.every((x) => x.health > (o.health || 60)); if (!o.done) { o.failed = true; o.why = 'Fleet damaged by solar storm'; } } break;
         default: break;
@@ -746,6 +747,7 @@ export class MissionEngine {
       case 'time_scale': s.timeScale = Math.max(1, Math.min(600, +action.x || 60)); return { ok: true, msg: `Time warp ×${s.timeScale}` };
       case 'pause': s.paused = !!action.on; return { ok: true, msg: s.paused ? 'Paused' : 'Resumed' };
       case 'inspect': if (sat && !s.stats.inspected.includes(sat.id) && sat.deployed) { s.stats.inspected.push(sat.id); this.log('info', `${sat.name} inspected${who}: health ${sat.health.toFixed(0)}%, battery ${(sat.battery / sat.batteryCap * 100).toFixed(0)}%.`); } return { ok: true, msg: 'Inspected.' };
+      case 'checkout': if (!sat) return { ok: false, msg: 'Select a satellite.' }; sat.checkedOut = true; this.log('info', `${sat.name}: checkout complete — bus ${(sat.battery / sat.batteryCap * 100).toFixed(0)}% charge, health ${sat.health.toFixed(0)}%.`); return { ok: true, msg: 'Checkout complete.' };
       case 'authorize': s.stats.authorized = true; this.log('good', `Commander authorization recorded${who}: GO for operations.`); return { ok: true, msg: 'Authorized.' };
       case 'agent_toggle': if (action.agent in s.agentsEnabled) { s.agentsEnabled[action.agent] = !!action.on; this.log('info', `Agent ${action.agent} ${action.on ? 'enabled' : 'disabled'}${who}.`); return { ok: true, msg: 'Updated.' }; } return { ok: false, msg: 'Unknown agent.' };
       case 'abort': this.end(false, `Mission aborted by operator${who}.`); return { ok: true, msg: 'Aborted.' };
@@ -812,7 +814,7 @@ export function scoreMission(engine, elapsedRealSec) {
     { label: `Power discipline (min battery ${batt.toFixed(0)}%)`, pts: Math.round(Math.min(100, batt)) },
     { label: `Time efficiency ${(100 * (1 - s.t / engine.mission.timeLimit)).toFixed(0)}% under limit`, pts: Math.round(150 * Math.max(0, 1 - s.t / engine.mission.timeLimit)) },
     { label: `Collision avoidance (${s.stats.avoided} cleared, ${s.stats.nearMiss} near-miss, ${s.stats.collisions} collision)`, pts: s.stats.avoided * 50 - s.stats.nearMiss * 25 - s.stats.collisions * 200 },
-    { label: `Decisions reviewed (${s.stats.approved} approved, ${s.stats.modified} modified, ${s.stats.rejected} rejected)`, pts: (s.stats.approved + s.stats.modified + s.stats.rejected) * 15 },
+    { label: `Decisions reviewed (${s.stats.approved} approved, ${s.stats.modified} modified, ${s.stats.rejected} rejected, ${s.stats.acked || 0} auto-actions reviewed)`, pts: (s.stats.approved + s.stats.modified + s.stats.rejected) * 15 + (s.stats.acked || 0) * 5 },
     { label: `Events resolved: ${s.stats.resolved}`, pts: s.stats.resolved * 40 },
   ];
   if (s.status !== 'success') lines.push({ label: 'Mission failed — score halved', pts: 0, mult: 0.5 });
