@@ -334,7 +334,21 @@ function build(list, mode) {
 
 export const SOLO_MISSIONS = build(SOLO, 'solo');
 export const SQUAD_MISSIONS = build(SQUAD, 'squad');
-export const ALL_MISSIONS = [...SOLO_MISSIONS, ...SQUAD_MISSIONS];
+const MP = [
+  { title: 'Relay Race', story: 'Quick-play co-op: two relays, one shared downlink quota. Flight deploys, Systems pushes data, Commander signs off.', timeLimit: 2 * H, preset: { satCount: 2, payload: 'relay' }, manualDeploy: true,
+    objectives: [O('deploy', 'Flight: deploy 2 relays', { count: 2, role: 'flight' }), O('downlink', 'Systems: downlink 400 MB', { mb: 400, role: 'systems' }), O('authorize', 'Commander: sign off', { role: 'commander' })] },
+  { title: 'Debris Dash', story: 'Quick-play co-op: a fragment is inbound. Plan, approve and execute the avoidance together.', timeLimit: 2 * H, preset: { satCount: 2 }, startMode: 'ai',
+    events: [{ type: 'debris', at: 300, target: 0, lead: 2700, miss: 0.2 }],
+    objectives: [O('deploy', 'Deploy 2', { count: 2, role: 'flight' }), O('avoid', 'Flight: clear the conjunction', { count: 1, role: 'flight' }), O('review', 'Supervisor: review 1 decision', { count: 1, role: 'autonomy' })] },
+  { title: 'Blackout Drill', story: 'Quick-play co-op: a transceiver dies and a heater sticks. Systems recovers both while the Commander keeps the fleet alive.', timeLimit: 2 * H, preset: { satCount: 2 },
+    events: [{ type: 'comms_loss', at: 400, target: 0 }, { type: 'power_shortage', at: 600, target: 1, watts: 50 }],
+    objectives: [O('deploy', 'Deploy 2', { count: 2, role: 'flight' }), O('resolve', 'Systems: resolve 2 faults', { count: 2, role: 'systems' }), O('min_alive', 'Commander: lose no satellites', { count: 2, role: 'commander' })] },
+  { title: 'Storm Watch', story: 'Quick-play co-op: a proton storm in 10 minutes. Safe the fleet, ride it out, then resume.', timeLimit: 2 * H, preset: { satCount: 3 }, phased: true,
+    events: [{ type: 'solar_storm', at: 300, lead: 600, duration: 1500 }],
+    objectives: [O('deploy', 'Deploy 3', { count: 3, role: 'flight' }), O('storm_safe', 'Commander: health > 60% after storm', { health: 60, role: 'commander' }), O('inspect', 'Systems: inspect all 3', { count: 3, role: 'systems' })] },
+];
+export const MP_MISSIONS = build(MP, 'squad').map((m, k) => ({ ...m, id: `M0${k + 1}`, tier: 'Multiplayer', quickplay: true, difficulty: 2 + k }));
+export const ALL_MISSIONS = [...SOLO_MISSIONS, ...SQUAD_MISSIONS, ...MP_MISSIONS];
 export const missionById = (id) => ALL_MISSIONS.find((m) => m.id === id);
 
 export const EVENT_INFO = {

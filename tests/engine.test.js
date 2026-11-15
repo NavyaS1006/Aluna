@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SOLO_MISSIONS, SQUAD_MISSIONS } from '../src/data/missions.js';
+import { SOLO_MISSIONS, SQUAD_MISSIONS, MP_MISSIONS } from '../src/data/missions.js';
 import { MissionEngine, scoreMission } from '../src/sim/engine.js';
 import { initialDesign } from '../src/sim/missionDesign.js';
 import { validateDesign } from '../src/sim/design.js';
@@ -30,7 +30,8 @@ describe('mission catalogue', () => {
     const sig = (m) => JSON.stringify(m.objectives.map((o) => [o.type, o.count, o.alt, o.mb, o.secs, o.hold, o.pct])) + JSON.stringify(m.events);
     expect(new Set(SOLO_MISSIONS.map(sig)).size).toBe(25);
     expect(new Set(SQUAD_MISSIONS.map(sig)).size).toBe(25);
-    expect(new Set([...SOLO_MISSIONS, ...SQUAD_MISSIONS].map((m) => m.id)).size).toBe(50);
+    expect(MP_MISSIONS).toHaveLength(4);
+    expect(new Set([...SOLO_MISSIONS, ...SQUAD_MISSIONS, ...MP_MISSIONS].map((m) => m.id)).size).toBe(54);
   });
   it('every squad objective names a role', () => {
     for (const m of SQUAD_MISSIONS) for (const o of m.objectives) expect(o.role, `${m.id} ${o.label}`).toBeTruthy();
@@ -38,7 +39,7 @@ describe('mission catalogue', () => {
 });
 
 describe('engine runs every mission headless (AI-assisted, auto-approve)', () => {
-  for (const m of [...SOLO_MISSIONS, ...SQUAD_MISSIONS]) {
+  for (const m of [...SOLO_MISSIONS, ...SQUAD_MISSIONS, ...MP_MISSIONS]) {
     it(`${m.id} ${m.title}`, () => {
       const d = initialDesign(m);
       const v = validateDesign(d, m.req);

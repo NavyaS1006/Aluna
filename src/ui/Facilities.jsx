@@ -1,7 +1,7 @@
 // The six interactive headquarters facilities. Each opens a working game system.
 import { useEffect, useMemo, useState } from 'react';
 import { useGame } from '../state/store.js';
-import { SOLO_MISSIONS, SQUAD_MISSIONS } from '../data/missions.js';
+import { SOLO_MISSIONS, SQUAD_MISSIONS, MP_MISSIONS } from '../data/missions.js';
 import { TRAINING } from '../data/training.js';
 import { missionStatus, MAX_ATTEMPTS, ACHIEVEMENTS, levelFor } from '../services/progress.js';
 import { openBriefing, resumeLive, loadLive, startTraining } from '../game/flow.js';
@@ -35,7 +35,7 @@ export function MissionControl() {
   const progress = useGame((s) => s.progress);
   const squad = useGame((s) => s.squad);
   const plat = useGame((s) => s.platform);
-  const list = mode === 'solo' ? SOLO_MISSIONS : SQUAD_MISSIONS;
+  const list = mode === 'solo' ? SOLO_MISSIONS : [...SQUAD_MISSIONS, ...MP_MISSIONS];
   const map = mode === 'solo' ? progress?.solo : squad?.progress;
   const firstOpen = list.find((m) => !missionStatus(map, m).completed && missionStatus(map, m).unlocked) || list[0];
   const [sel, setSel] = useState(firstOpen);
@@ -49,14 +49,14 @@ export function MissionControl() {
   const canResume = mode === 'solo' && live && live.missionId === sel.id && st.active?.seed === live.seed;
   const sqInfo = mode === 'squad' && squad ? squadAttemptsInfo(squad, sel) : null;
   return (
-    <Shell title={`🛰 Mission Control Room · ${mode === 'solo' ? 'Solo Campaign' : 'Squad Ops'}`} color="#4fd1ff" right={<span className="pill">{list.filter((m) => missionStatus(map, m).completed).length}/25 complete</span>}>
+    <Shell title={`🛰 Mission Control Room · ${mode === 'solo' ? 'Solo Campaign' : 'Squad Ops'}`} color="#4fd1ff" right={<span className="pill">{list.filter((m) => !m.quickplay && missionStatus(map, m).completed).length}/25 complete{mode === 'squad' ? ' · +4 Multiplayer' : ''}</span>}>
       {mode === 'squad' && !squad && <div className="notice" style={{ marginBottom: 10 }}>Squad Ops missions are flown by a squad. Visit the <b>Squad Coordination Room</b> to create or join one. Squad progress is separate from your Solo Campaign.</div>}
       {mode === 'squad' && squad && !isLeader && <div className="notice" style={{ marginBottom: 10 }}>Your squad leader selects and launches missions. You'll be taken to the briefing automatically.</div>}
       <div className="split" style={{ gridTemplateColumns: '1.3fr 1fr' }}>
         <div>
-          {['Beginner', 'Intermediate', 'Advanced', 'Expert'].map((tier) => (
+          {['Beginner', 'Intermediate', 'Advanced', 'Expert', ...(mode === 'squad' ? ['Multiplayer'] : [])].map((tier) => (
             <div key={tier}>
-              <div className="section-title">{tier}</div>
+              <div className="section-title">{tier === 'Multiplayer' ? 'Multiplayer Quick Ops (4 · always unlocked · 2–4 players)' : tier}</div>
               <div className="mlist">
                 {list.filter((m) => m.tier === tier).map((m) => {
                   const s = missionStatus(map, m);

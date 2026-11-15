@@ -3,12 +3,20 @@
 // animations cross-fade (Idle ↔ Walking ↔ Running ↔ Wave).
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { useGLTF } from '@react-three/drei';
+import { suspend } from 'suspend-react';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-export const MODEL_URL = `${import.meta.env.BASE_URL}assets/models/RobotExpressive.glb`;
-useGLTF.preload(MODEL_URL);
+export const MODEL_URL = `${import.meta.env.BASE_URL}assets/models/robot.glb.b64.txt`;
+// Model shipped as base64 text (host serves only standard web types); decoded and parsed in memory.
+async function loadRobot() {
+  const txt = (await (await fetch(MODEL_URL)).text()).trim();
+  const bin = atob(txt); const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  return new GLTFLoader().parseAsync(buf.buffer, '');
+}
+const useRobot = () => suspend(loadRobot, ['aluna-robot']);
 
 export const SUIT_COLORS = ['#e6e9ef', '#4fd1ff', '#ffb547', '#ff6fa8', '#7cff9b', '#b18cff', '#ff5c5c', '#2f6bff'];
 export const TRIM_COLORS = ['#3a3f4b', '#c0c6d2', '#d9a441', '#1d2733', '#5cf2d6', '#a33'];
@@ -27,7 +35,7 @@ export function makeNameTag(text, color = '#4fd1ff', sub = '') {
 }
 
 export default function Character({ look = DEFAULT_LOOK, anim = 'Idle', name, sub, tagColor, groupRef, speed = 1 }) {
-  const { scene, animations } = useGLTF(MODEL_URL);
+  const { scene, animations } = useRobot();
   const model = useMemo(() => {
     const m = skeletonClone(scene);
     m.traverse((o) => {

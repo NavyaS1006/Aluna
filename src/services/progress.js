@@ -35,8 +35,8 @@ export const xpForLevel = (lvl) => (lvl - 1) ** 2 * 150;
 export function missionStatus(map, mission, now = Date.now()) {
   const list = mission.mode === 'solo' ? SOLO_MISSIONS : SQUAD_MISSIONS;
   const rec = map?.[mission.id] || {};
-  const prev = list[mission.number - 2];
-  const unlocked = mission.number === 1 || !!map?.[prev?.id]?.completed;
+  const prev = mission.quickplay ? null : list[mission.number - 2];
+  const unlocked = mission.quickplay || mission.number === 1 || !!map?.[prev?.id]?.completed;
   const lockedUntil = rec.lockedUntil && rec.lockedUntil > now ? rec.lockedUntil : 0;
   const fails = lockedUntil ? MAX_ATTEMPTS : rec.lockedUntil && rec.lockedUntil <= now ? 0 : rec.fails || 0;
   return { unlocked, completed: !!rec.completed, best: rec.best || 0, stars: rec.stars || 0, plays: rec.plays || 0, fails, attemptsLeft: MAX_ATTEMPTS - fails, lockedUntil, active: rec.active || null, cooldown: !!lockedUntil };
