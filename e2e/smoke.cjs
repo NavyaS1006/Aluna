@@ -12,7 +12,7 @@ const OUT = process.env.OUT || 'shots';
   const shot = (n) => page.screenshot({ path: `${OUT}/${n}.png` });
   const step = async (name, fn) => { const t = Date.now(); try { await fn(); console.log(`✓ ${name} (${Date.now() - t} ms)`); } catch (e) { console.log(`✗ ${name}: ${e.message.split('\n')[0]}`); await shot(`fail-${name.replace(/\W+/g, '_')}`); throw e; } };
   try {
-    await step('boot → intro', async () => { await page.goto(`${BASE}?as=alice`); await page.getByText('Skip intro').waitFor({ timeout: 60000 }); await page.waitForTimeout(2500); await shot('01-intro'); });
+    await step('boot → intro', async () => { await page.goto(BASE); await page.getByText('Skip intro').waitFor({ timeout: 60000 }); await page.waitForTimeout(2500); await shot('01-intro'); });
     await step('intro skip → title', async () => { await page.getByText('Skip intro').click(); await page.getByText('PRESS START').waitFor(); await page.waitForTimeout(800); await shot('02-title'); });
     await step('title → auth', async () => { await page.getByText('PRESS START').click(); await page.getByRole('tab', { name: 'Register' }).waitFor(); });
     await step('register validation rejects bad input', async () => {
